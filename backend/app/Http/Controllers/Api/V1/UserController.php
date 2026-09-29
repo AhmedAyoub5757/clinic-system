@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Support\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
@@ -40,6 +41,7 @@ class UserController extends Controller
             $user->syncRoles($request->role);
         }
 
+        Cache::tags('doctors')->flush();
         return ApiResponse::success(new UserResource($user->load('roles')), 'User updated');
     }
 
@@ -52,6 +54,7 @@ class UserController extends Controller
         $user->tokens()->delete(); // revoke their active sessions
         $user->delete();
 
+        Cache::tags('doctors')->flush();
         return ApiResponse::success(null, 'User deleted');
     }
 }
