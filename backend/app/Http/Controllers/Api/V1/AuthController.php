@@ -24,6 +24,8 @@ class AuthController extends Controller
 
         $token = $user->createToken($request->input('device_name', 'api'))->plainTextToken;
 
+        $user->load('roles');
+
         return ApiResponse::success([
             'token'      => $token,
             'token_type' => 'Bearer',
@@ -41,6 +43,6 @@ class AuthController extends Controller
         // Revoke only the token used for this request (this device/session)
         $request->user()->currentAccessToken()->delete();
 
-        return ApiResponse::success(null, 'Logged out successfully');
+        return ApiResponse::success(new UserResource($request->user()->load('roles')));
     }
 }

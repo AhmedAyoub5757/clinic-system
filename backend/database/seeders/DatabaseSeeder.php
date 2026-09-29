@@ -9,9 +9,20 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@clinic.test'],
-            ['name' => 'System Admin', 'password' => 'password'] // hashed automatically by the model cast
-        );
+        $this->call(RoleSeeder::class);
+
+        $users = [
+            ['System Admin',   'admin@clinic.test',     'admin'],
+            ['Dr. Sara Khan',  'doctor@clinic.test',    'doctor'],
+            ['Ali Reception',  'reception@clinic.test', 'receptionist'],
+        ];
+
+        foreach ($users as [$name, $email, $role]) {
+            $user = User::updateOrCreate(
+                ['email' => $email],
+                ['name' => $name, 'password' => 'password']
+            );
+            $user->syncRoles($role);
+        }
     }
 }

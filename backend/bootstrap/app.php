@@ -10,6 +10,8 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,7 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn(Request $request) => null);
+        $middleware->alias([
+            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
@@ -46,6 +52,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // 404: unknown route or model not found (route model binding)
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             return ApiResponse::error('Resource not found', 404);
+        });
+
+        // 403: authenticated but missing the required role (Spatie)
+        $exceptions->render(function (UnauthorizedException $e, Request $request) {
+            return ApiResponse::error('You do not have the required role', 403);
         });
 
         // Other HTTP errors: 405 method not allowed, 429 too many requests, etc.

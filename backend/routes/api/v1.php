@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 // use Illuminate\Http\Request;
 // use App\Support\ApiResponse;
+use App\Http\Controllers\Api\V1\UserController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -32,4 +33,8 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
+});
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::apiResource('users', UserController::class);
 });
