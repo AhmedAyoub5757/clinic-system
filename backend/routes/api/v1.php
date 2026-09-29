@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 // use Illuminate\Http\Request;
 // use App\Support\ApiResponse;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\PatientController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -35,6 +36,18 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::apiResource('users', UserController::class);
+Route::middleware('auth:sanctum')->group(function () {
+
+    // Read: all staff roles
+    Route::middleware('role:admin|doctor|receptionist')->group(function () {
+        Route::get('patients', [PatientController::class, 'index']);
+        Route::get('patients/{patient}', [PatientController::class, 'show']);
+    });
+
+    // Write: receptionist only
+    Route::middleware('role:receptionist')->group(function () {
+        Route::post('patients', [PatientController::class, 'store']);
+        Route::put('patients/{patient}', [PatientController::class, 'update']);
+        Route::delete('patients/{patient}', [PatientController::class, 'destroy']);
+    });
 });
