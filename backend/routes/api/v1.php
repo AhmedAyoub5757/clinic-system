@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\AuthController;
 // use Illuminate\Http\Request;
 // use App\Support\ApiResponse;
 
@@ -23,3 +24,12 @@ Route::get('/ping', function () {
 // Route::get('/test-error', fn () => throw new Exception('Something broke'));
 
 // Route::get('/test-auth', fn () => ApiResponse::success())->middleware('auth:sanctum');
+
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+    });
+});
