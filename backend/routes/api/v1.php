@@ -7,12 +7,11 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\DoctorController;
+use App\Http\Controllers\Api\V1\AppointmentController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
 });
-
-
 
 // Route::get('/test-success', fn () => ApiResponse::success(['name' => 'Clinic API'], 'It works'));
 
@@ -65,4 +64,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('doctors', [DoctorController::class, 'store']);
         Route::put('doctors/{doctor}', [DoctorController::class, 'update']);
     });
+
+    Route::middleware('role:admin|doctor|receptionist')->group(function () {
+        Route::get('appointments', [AppointmentController::class, 'index']);
+        Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
+        Route::get('doctors/{doctor}/availability', [AppointmentController::class, 'availability']);
+    });
+
+    Route::middleware('role:receptionist')->group(function () {
+        Route::post('appointments', [AppointmentController::class, 'store']);
+        Route::put('appointments/{appointment}', [AppointmentController::class, 'update']);
+        Route::post('appointments/{appointment}/confirm', [AppointmentController::class, 'confirm']);
+        Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel']);
+    });
+
+    Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
+        ->middleware('role:doctor');
 });
