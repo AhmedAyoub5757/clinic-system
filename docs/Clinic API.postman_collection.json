@@ -1,0 +1,1087 @@
+{
+  "info": {
+    "_postman_id": "737c1987-9f97-41b7-b1bd-dfe89491cc40",
+    "name": "Clinic API",
+    "description": "# Clinic API\n\nBase URL: `{{base_url}}` (environment: Local)\n\n## Authentication\n\n1. `POST /auth/login` returns a token. The Login request saves it automatically.\n    \n2. All other requests send it as `Authorization: Bearer` .\n    \n3. Tokens expire after 8 hours.\n    \n\n## Roles\n\n| Role | Can do |\n| --- | --- |\n| admin | Manage staff and doctor profiles, view dashboard |\n| receptionist | Manage patients and appointments |\n| doctor | Record consultations, view own appointments and patient history |\n\n## Response format\n\nSuccess: `{ success, message, data }`. Errors: `{ success: false, message, errors? }`.\n\n## Status codes\n\n200 OK, 201 Created, 401 not logged in, 403 wrong role or not your record,  \n404 not found, 409 conflict (slot taken, illegal status change),  \n422 validation failed, 429 rate limited.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "48230951",
+    "_collection_link": "https://go.postman.co/collection/48230951-737c1987-9f97-41b7-b1bd-dfe89491cc40?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "  if (pm.response.code === 200) {\r\n      pm.environment.set(\"token\", pm.response.json().data.token);\r\n  }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   { \"email\": \"doctor@clinic.test\", \"password\": \"password\", \"device_name\": \"postman\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Receptionist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "  if (pm.response.code === 200) {\r\n      pm.environment.set(\"token\", pm.response.json().data.token);\r\n  }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "  { \"email\": \"reception@clinic.test\", \"password\": \"password\", \"device_name\": \"postman\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "  if (pm.response.code === 200) {\r\n      pm.environment.set(\"token\", pm.response.json().data.token);\r\n  }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "  { \"email\": \"doctor@clinic.test\", \"password\": \"password\", \"device_name\": \"postman\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "  if (pm.response.code === 200) {\r\n      pm.environment.set(\"token\", pm.response.json().data.token);\r\n      pm.environment.set(\"admin_id\", pm.response.json().data.user.id);\r\n  }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"admin@clinic.test\", \"password\": \"password\", \"device_name\": \"postman\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {\r\n    pm.environment.set(\"user_id\", pm.response.json().data.id);\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Dr. Hina Malik\", \"email\": \"hina@clinic.test\", \"password\": \"password123\", \"role\": \"doctor\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \r\n    \"name\": \"new name\" \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "03001234567",
+                  "disabled": true
+                },
+                {
+                  "key": "gender",
+                  "value": "robot",
+                  "disabled": true
+                },
+                {
+                  "key": "blood_group",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "last_name",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "5",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "2",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   if (pm.response.code === 201) {\r\n       pm.environment.set(\"patient_id\", pm.response.json().data.id);\r\n   }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"first_name\": \"Ahmed\",\r\n     \"last_name\": \"Raza\",\r\n     \"gender\": \"male\",\r\n     \"date_of_birth\": \"1990-05-14\",\r\n     \"phone\": \"03001234567\",\r\n     \"national_id\": \"3520212345671\",\r\n     \"blood_group\": \"O+\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   { \"phone\": \"03111111111\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "{{patient_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors"
+              ],
+              "query": [
+                {
+                  "key": "specialization",
+                  "value": "Cardiology",
+                  "disabled": true
+                },
+                {
+                  "key": "available_on",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "Sara",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Show",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctors/{{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "{{doctor_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {\r\n    pm.environment.set(\"doctor_id\", pm.response.json().data.id);\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 10,\r\n  \"specialization\": \"Neurology\",\r\n  \"license_number\": \"PMC-90001\",\r\n  \"phone\": \"03001112233\",\r\n  \"consultation_fee\": 2500,\r\n  \"slot_duration\": 30,\r\n  \"bio\": \"Consultant neurologist\",\r\n  \"schedules\": [\r\n    { \"day_of_week\": 1, \"start_time\": \"10:00\", \"end_time\": \"14:00\" },\r\n    { \"day_of_week\": 4, \"start_time\": \"10:00\", \"end_time\": \"14:00\" }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/{{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "{{doctor_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments?doctor_id=1&date={{next_monday}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "doctor_id",
+                  "value": "1"
+                },
+                {
+                  "key": "patient_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date",
+                  "value": "{{next_monday}}"
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Show",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"symptoms\": \"Fever for 3 days, headache, body aches\",\r\n  \"diagnosis\": \"Viral fever\",\r\n  \"notes\": \"Advised rest and fluids. Return if fever persists beyond 5 days.\",\r\n  \"follow_up_date\": \"{{next_monday}}\",\r\n  \"prescriptions\": [\r\n    { \"medicine_name\": \"Paracetamol\", \"dosage\": \"500mg\", \"frequency\": \"3 times a day\", \"duration_days\": 5, \"instructions\": \"After meals\" },\r\n    { \"medicine_name\": \"Cetirizine\", \"dosage\": \"10mg\", \"frequency\": \"Once at night\", \"duration_days\": 3 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/1/consultation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "1",
+                "consultation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctors/1/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "1",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {\r\n    pm.environment.set(\"appointment_id\", pm.response.json().data.id);\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"patient_id\": 4,\r\n  \"doctor_id\": 1,\r\n  \"appointment_date\": \"{{next_monday}}\",\r\n  \"start_time\": \"10:00\",\r\n  \"reason\": \"Fever and headache\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book Scratch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"patient_id\": 4,\r\n  \"doctor_id\": 1,\r\n  \"appointment_date\": \"{{next_monday}}\",\r\n  \"start_time\": \"10:00\",\r\n  \"reason\": \"Fever and headache\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "doctor_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "start_time",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "patient_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "appointment_date",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\": \"Follow-up\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/confirm",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}",
+                "confirm"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"cancellation_reason\": \"Patient requested\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointment_id}}",
+                "complete"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Consultations",
+      "item": [
+        {
+          "name": "Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {\r\n    pm.environment.set(\"consultation_id\", pm.response.json().data.id);\r\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"symptoms\": \"Fever for 3 days, headache, body aches\",\r\n  \"diagnosis\": \"Viral fever\",\r\n  \"notes\": \"Advised rest and fluids. Return if fever persists beyond 5 days.\",\r\n  \"follow_up_date\": \"{{next_monday}}\",\r\n  \"prescriptions\": [\r\n    { \"medicine_name\": \"Paracetamol\", \"dosage\": \"500mg\", \"frequency\": \"3 times a day\", \"duration_days\": 5, \"instructions\": \"After meals\" },\r\n    { \"medicine_name\": \"Cetirizine\", \"dosage\": \"10mg\", \"frequency\": \"Once at night\", \"duration_days\": 3 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/1/consultation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "appointments",
+                "1",
+                "consultation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Show",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/consultations/{{consultation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "consultations",
+                "{{consultation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/consultations/{{consultation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "consultations",
+                "{{consultation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Patient History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/1/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "const pad = n => String(n).padStart(2, \"0\");\r",
+          "const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;\r",
+          "\r",
+          "function nextDay(target) { // 0 = Sunday ... 6 = Saturday\r",
+          "    const d = new Date();\r",
+          "    d.setDate(d.getDate() + (((target - d.getDay() + 7) % 7) || 7));\r",
+          "    return fmt(d);\r",
+          "}\r",
+          "\r",
+          "pm.environment.set(\"today\", fmt(new Date()));\r",
+          "pm.environment.set(\"next_sunday\", nextDay(0));\r",
+          "pm.environment.set(\"next_monday\", nextDay(1));\r",
+          "pm.environment.set(\"next_tuesday\", nextDay(2));"
+        ],
+        "type": "text/javascript"
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "pm.test(\"Response is JSON with a success flag\", () => {\r",
+          "    pm.response.to.be.json;\r",
+          "    pm.expect(pm.response.json()).to.have.property(\"success\");\r",
+          "});\r",
+          "\r",
+          "pm.test(\"Error responses include a message\", () => {\r",
+          "    const body = pm.response.json();\r",
+          "    if (body.success === false) {\r",
+          "        pm.expect(body).to.have.property(\"message\");\r",
+          "    }\r",
+          "});\r",
+          "\r",
+          "pm.test(\"Responds in under 1000 ms\", () => {\r",
+          "    pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+          "});"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
+}
