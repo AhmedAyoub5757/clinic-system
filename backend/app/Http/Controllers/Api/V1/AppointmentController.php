@@ -98,21 +98,21 @@ class AppointmentController extends Controller
         return ApiResponse::success(new AppointmentResource($appointment), 'Appointment cancelled');
     }
 
-    public function complete(Appointment $appointment)
-    {
-        Gate::authorize('complete', $appointment);
+    // public function complete(Appointment $appointment)
+    // {
+    //     Gate::authorize('complete', $appointment);
 
-        $this->assertCanTransition($appointment, AppointmentStatus::Completed);
+    //     $this->assertCanTransition($appointment, AppointmentStatus::Completed);
 
-        if ($appointment->appointment_date->isFuture()) {
-            abort(409, 'Cannot complete an appointment that has not happened yet.');
-        }
+    //     if ($appointment->appointment_date->isFuture()) {
+    //         abort(409, 'Cannot complete an appointment that has not happened yet.');
+    //     }
 
-        return ApiResponse::success(
-            new AppointmentResource($this->transition($appointment, AppointmentStatus::Completed)),
-            'Appointment completed'
-        );
-    }
+    //     return ApiResponse::success(
+    //         new AppointmentResource($this->transition($appointment, AppointmentStatus::Completed)),
+    //         'Appointment completed'
+    //     );
+    // }
 
     public function availability(AvailabilityRequest $request, Doctor $doctor)
     {

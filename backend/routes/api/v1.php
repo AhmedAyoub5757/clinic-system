@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\DoctorController;
 use App\Http\Controllers\Api\V1\AppointmentController;
+use App\Http\Controllers\Api\V1\ConsultationController;
+
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -78,6 +80,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel']);
     });
 
-    Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
-        ->middleware('role:doctor');
+    // Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
+    //     ->middleware('role:doctor');
+
+    Route::middleware('role:doctor')->group(function () {
+        Route::post('appointments/{appointment}/consultation', [ConsultationController::class, 'store']);
+        Route::get('consultations/{consultation}', [ConsultationController::class, 'show']);
+        Route::put('consultations/{consultation}', [ConsultationController::class, 'update']);
+        Route::get('patients/{patient}/history', [ConsultationController::class, 'history']);
+    });
 });
