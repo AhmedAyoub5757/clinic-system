@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\PatientController;
 use App\Http\Controllers\Api\V1\DoctorController;
 use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\ConsultationController;
+use App\Http\Controllers\Api\V1\DashboardController;
 
 
 Route::get('/ping', function () {
@@ -30,7 +31,7 @@ Route::get('/ping', function () {
 // Route::get('/test-auth', fn () => ApiResponse::success())->middleware('auth:sanctum');
 
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -65,6 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('doctors', [DoctorController::class, 'store']);
         Route::put('doctors/{doctor}', [DoctorController::class, 'update']);
+
+        Route::get('admin/dashboard', DashboardController::class);
     });
 
     Route::middleware('role:admin|doctor|receptionist')->group(function () {

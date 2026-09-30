@@ -11,6 +11,10 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Spatie\Permission\Exceptions\UnauthorizedException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -26,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
+        $middleware->throttleApi(redis: true);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
@@ -50,8 +55,17 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // 404: unknown route or model not found (route model binding)
+        // 404: a specific record, or an unknown route
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
-            return ApiResponse::error('Resource not found', 404);
+            $previous = $e->getPrevious();
+
+            // Route model binding: Laravel wraps ModelNotFoundException inside this exception
+            if ($previous instanceof ModelNotFoundException) {
+                $name = Str::headline(class_basename($previous->getModel()));
+                return ApiResponse::error("{$name} not found", 404);
+            }
+
+            return ApiResponse::error('Endpoint not found', 404);
         });
 
         // 403: authenticated but missing the required role (Spatie)
@@ -62,6 +76,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // Other HTTP errors: 405 method not allowed, 429 too many requests, etc.
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
             return ApiResponse::error($e->getMessage() ?: 'HTTP error', $e->getStatusCode());
+        });
+
+        // 405
+        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
+            return ApiResponse::error('Method not allowed', 405)->withHeaders($e->getHeaders());
+        });
+
+        // 429: keep the Retry-After header so clients know when to try again
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
+            return ApiResponse::error('Too many requests. Please try again later.', 429)
+                ->withHeaders($e->getHeaders());
         });
 
         // 500: anything unexpected. Never leak internals in production.
