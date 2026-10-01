@@ -267,6 +267,14 @@ export default function AppointmentsPage() {
                   </td>
                   {showActions && (
                     <td className="appointment-actions">
+                      {canBook && ["pending", "confirmed"].includes(a.status) && (
+                        <Link
+                          to={`/appointments/${a.id}/reschedule`}
+                          className="text-gray-700"
+                        >
+                          Reschedule
+                        </Link>
+                      )}
                       {actions.includes("confirmed") && (
                         <button
                           onClick={() => handleConfirm(a)}

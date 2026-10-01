@@ -278,3 +278,58 @@ button { border: 0; cursor: pointer; }
 .booking-page { max-width: 900px; }.booking-card { max-width: 760px; }.booking-step + .booking-step { margin-top: 28px; padding-top: 26px; border-top: 1px solid #edf0f5; }.booking-step-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 17px; }.booking-step-heading > span { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 8px; color: var(--blue); background: #edf2ff; font-size: 10px; font-weight: 800; }.booking-step-heading h2 { margin: 0 0 4px; color: var(--ink); font-size: 14px; }.booking-step-heading h2 small { margin-left: 7px; color: #a1aab8; font-size: 10px; font-weight: 600; }.booking-step-heading p { margin: 0; color: #9aa5b5; font-size: 11px; }.availability-label { display: flex !important; align-items: center; gap: 6px; margin-bottom: 11px !important; color: #66758b !important; }.time-slots { display: flex; flex-wrap: wrap; gap: 8px; }.time-slot { min-width: 76px; padding: 10px 12px; border: 1px solid #dce4ef; border-radius: 6px; color: #61728c; background: #fff; font-size: 11px; font-weight: 700; transition: color 150ms ease, border-color 150ms ease, background 150ms ease, transform 150ms ease; }.time-slot:hover { border-color: #9db6fc; color: var(--blue); transform: translateY(-2px); }.time-slot.is-selected { border-color: var(--blue); color: #fff; background: var(--blue); box-shadow: 0 6px 14px rgba(47,107,255,.2); }.no-slots-message { padding: 13px; border: 1px dashed #dbe2eb; border-radius: 7px; color: #7d899a; background: #fafbfc; font-size: 11px; line-height: 1.6; }.date-input { max-width: 260px; }.modal-label { display: block; margin: 18px 0 7px; color: #596a82; font-size: 11px; font-weight: 800; }.modal-textarea { min-height: 80px !important; padding-top: 10px !important; resize: vertical; }.cancel-dialog { max-width: 460px; }
 @media (max-width: 720px) { .directory-heading { display: block; }.directory-count { width: max-content; margin-top: 18px; }.directory-heading-actions { justify-content: stretch; margin: -6px 0 18px; }.directory-heading-actions .primary-button { width: 100%; justify-content: center; }.directory-toolbar { align-items: stretch; }.directory-search { min-width: 100%; }.directory-select { flex: 1; min-width: 0; }.directory-table-wrap { overflow-x: auto; }.directory-table { min-width: 760px; }.appointments-page .directory-table { min-width: 850px; }.booking-card { padding: 20px 16px; }.date-input { max-width: none; }.time-slot { flex: 1 1 74px; } }
 .patient-picker { position: relative; }.picker-search { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 12px; border: 1px solid #dfe5ee; border-radius: 6px; color: #9aa5b5; background: #fff; transition: border-color 160ms ease, box-shadow 160ms ease; }.picker-search:focus-within { border-color: #91abf5; box-shadow: 0 0 0 3px rgba(47,107,255,.1); }.picker-search input { width: 100%; height: 40px; border: 0; outline: none; color: var(--ink); background: transparent; font-size: 12px; }.picker-results { position: absolute; z-index: 8; top: calc(100% + 6px); right: 0; left: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 14px 35px rgba(25,43,75,.16); animation: pickerIn 160ms ease both; }.picker-result { display: flex; width: 100%; align-items: center; gap: 10px; padding: 11px 13px; text-align: left; background: #fff; transition: background 140ms ease; }.picker-result:hover { background: #f5f8ff; }.picker-result > span:last-child, .selected-patient > span:nth-child(2) { display: flex; flex-direction: column; gap: 3px; }.picker-result strong, .selected-patient strong { color: var(--ink); font-size: 12px; }.picker-result small, .selected-patient small { color: #9aa5b5; font-size: 10px; }.picker-message { margin: 0; padding: 14px; color: #8a96a7; font-size: 11px; }.selected-patient { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 10px 12px; border: 1px solid #bcd1ff; border-radius: 7px; background: #f6f8ff; }.selected-patient > span:nth-child(2) { flex: 1; }.selected-patient > button { display: grid; padding: 5px; color: #7f8eaa; background: none; }.selected-patient > button:hover { color: var(--blue); } @keyframes pickerIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Staff, doctor, and rescheduling surfaces */
+.staff-page, .doctors-page { max-width: 1180px; }
+.staff-toolbar, .doctors-toolbar { margin-bottom: 20px; }
+.directory-search-input { min-width: 250px; height: 38px; flex: 1; padding: 0 11px; border: 1px solid var(--line); border-radius: 5px; outline: none; color: var(--ink); background: #fff; font-size: 12px; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.directory-search-input:focus { border-color: #9ab4ff; box-shadow: 0 0 0 3px rgba(47,107,255,.1); }
+.role-pill { display: inline-flex; padding: 5px 8px; border-radius: 5px; font-size: 10px; font-weight: 800; text-transform: capitalize; }
+.role-pill.bg-purple-100 { color: #7457a8; background: #f1eafe; }
+.role-pill.bg-blue-100 { color: #315fc4; background: #e6edff; }
+.role-pill.bg-teal-100 { color: #217d70; background: #e1f7f2; }
+.staff-page .directory-table tbody tr, .doctors-page .directory-table tbody tr { animation: rowIn 320ms ease both; }
+.staff-page .directory-table tbody tr:nth-child(2), .doctors-page .directory-table tbody tr:nth-child(2) { animation-delay: 45ms; }
+.staff-page .directory-table tbody tr:nth-child(3), .doctors-page .directory-table tbody tr:nth-child(3) { animation-delay: 90ms; }
+.schedule-cell { color: #728198 !important; font-size: 11px; line-height: 1.8; }
+.schedule-cell div { white-space: nowrap; }
+.schedule-cell span { display: inline-block; width: 35px; color: var(--ink); font-weight: 800; text-transform: uppercase; }
+.staff-form-page, .doctor-form-page { max-width: 900px; }
+.staff-form-card { max-width: 650px; }
+.doctor-form-card { max-width: 820px; }
+.staff-form-card .form-actions, .doctor-form-card .form-actions, .reschedule-card .form-actions { margin-top: 26px; }
+.doctor-schedule { overflow: hidden; border: 1px solid #e4e9f1; border-radius: 8px; }
+.doctor-schedule-row { padding: 13px 14px; border-bottom: 1px solid #edf0f5; background: #fff; transition: background 160ms ease; }
+.doctor-schedule-row:last-child { border-bottom: 0; }
+.doctor-schedule-row:hover { background: #f8faff; }
+.doctor-schedule-row input[type="time"] { height: 34px; padding: 0 8px; border: 1px solid #dfe5ee; border-radius: 5px; color: var(--ink); background: #fff; font-size: 11px; }
+.doctor-schedule-row input[type="checkbox"] { accent-color: var(--blue); }
+.reschedule-page { max-width: 900px; }
+.reschedule-card { max-width: 760px; }
+.appointment-context { max-width: 760px; margin-bottom: 17px; padding: 17px 19px; border: 1px solid #dbe5fb; border-radius: 10px; color: #637491; background: #f7f9ff; box-shadow: 0 8px 25px rgba(38,70,130,.035); animation: rowIn 320ms ease both; }
+.appointment-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.appointment-context p { margin: 0; font-size: 12px; line-height: 1.6; }
+.appointment-context p + p { margin-top: 3px; }
+.appointment-context .font-medium { color: var(--ink); font-size: 13px; font-weight: 800; }
+.appointment-context .font-mono { margin-left: 5px; color: #8295b4; }
+.appointment-context .text-xs { margin-top: 9px; color: #97a4b8; font-size: 10px; }
+.reschedule-card > div { animation: sectionIn 360ms ease both; }
+.reschedule-card > div:nth-child(2) { animation-delay: 60ms; }
+.reschedule-card > div:nth-child(3) { animation-delay: 110ms; }
+.reschedule-card > div:nth-child(4) { animation-delay: 160ms; }
+.appointments-page .directory-table tbody tr { animation: rowIn 320ms ease both; }
+.appointments-page .appointment-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px 14px; }
+.appointments-page .appointment-actions > a { color: #52647f; font-size: 11px; font-weight: 700; text-decoration: none; }
+.appointments-page .appointment-actions > a:hover { color: var(--blue); text-decoration: underline; }
+@keyframes sectionIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 720px) {
+  .directory-search-input { min-width: 100%; }
+  .staff-page .page-heading, .doctors-page .page-heading { display: block; }
+  .staff-page .primary-button, .doctors-page .primary-button { justify-content: center; width: 100%; margin-top: 20px; }
+  .doctor-schedule-row > .flex { align-items: flex-start; flex-wrap: wrap; gap: 9px; }
+  .doctor-schedule-row > .flex label { width: 100%; }
+  .appointment-context-heading { align-items: flex-start; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

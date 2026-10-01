@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listDoctors } from "../api/doctors";
 import Pagination from "../components/Pagination";
+import { useAuth } from "../context/AuthContext";
 import useDebounce from "../hooks/useDebounce";
+import useFlash from "../hooks/useFlash";
 import { friendlyMessage } from "../lib/errors";
-import { Search, SlidersHorizontal, Stethoscope } from "lucide-react";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -14,16 +16,18 @@ const SORT_OPTIONS = [
 ];
 
 export default function DoctorsPage() {
+  const { user } = useAuth();
+  const isAdmin = user.role === "admin"; // Swagger: writes are admin-only
+  const [flash, setFlash] = useFlash();
+
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput);
 
-  // Any filter change goes back to page 1
-  const [filters, setFilters] = useState({ search: "", available_on: "", sort: "specialization", page: 1 });
+  // is_active: the API sends "1" for active (its default) or "0" for inactive. There is no "all".
+  const [filters, setFilters] = useState({ search: "", available_on: "", is_active: "1", sort: "specialization", page: 1 });
   const update = (changes) => setFilters((f) => ({ ...f, page: 1, ...changes }));
 
   useEffect(() => {
-    // Debounced search is intentionally written into the request filters.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     update({ search: debouncedSearch });
   }, [debouncedSearch]);
 
@@ -33,8 +37,6 @@ export default function DoctorsPage() {
 
   useEffect(() => {
     let ignore = false;
-    // The request lifecycle owns these flags so the directory reflects the active filters immediately.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
 
@@ -46,32 +48,54 @@ export default function DoctorsPage() {
     return () => {
       ignore = true;
     };
-  }, [filters.search, filters.available_on, filters.sort, filters.page]);
+  }, [filters.search, filters.available_on, filters.is_active, filters.sort, filters.page]);
 
   const { items, meta } = result;
+  const columns = isAdmin ? 6 : 5;
 
   return (
     <div className="directory-page doctors-page page-enter">
-      <div className="page-heading directory-heading"><div><p className="eyebrow">Care team</p><h1>Doctors</h1><p className="page-subtitle">Browse specialties, schedules, and consultation fees.</p></div><div className="directory-count"><Stethoscope size={17} /><strong>{meta?.total ?? "--"}</strong> active doctors</div></div>
+      <div className="page-heading directory-heading">
+        <div>
+          <p className="eyebrow">Clinical directory</p>
+          <h1>Doctors</h1>
+          <p className="page-subtitle">Keep profiles, availability, and fees in view.</p>
+        </div>
+        {isAdmin && (
+          <Link to="/doctors/new" className="primary-button">New doctor profile</Link>
+        )}
+      </div>
 
-      <div className="directory-toolbar"><div className="directory-search"><Search size={17} /><input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search name or specialization" /></div><span className="filter-label"><SlidersHorizontal size={15} /> Filters</span>
+      {flash && (
+        <div className="patient-flash">
+          <span>{flash}</span>
+          <button onClick={() => setFlash("")} aria-label="Dismiss">×</button>
+        </div>
+      )}
 
-        <select
-          value={filters.available_on}
-          onChange={(e) => update({ available_on: e.target.value })}
-          className="directory-select"
-        >
+      <div className="directory-toolbar doctors-toolbar">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Name or specialization"
+          className="directory-search-input"
+        />
+
+        <select value={filters.available_on} onChange={(e) => update({ available_on: e.target.value })} className="directory-select">
           <option value="">Any day</option>
           {WEEKDAYS.map((name, i) => (
             <option key={name} value={String(i)}>Works on {name}</option>
           ))}
         </select>
 
-        <select
-          value={filters.sort}
-          onChange={(e) => update({ sort: e.target.value })}
-          className="directory-select"
-        >
+        {isAdmin && (
+          <select value={filters.is_active} onChange={(e) => update({ is_active: e.target.value })} className="directory-select">
+            <option value="1">Active doctors</option>
+            <option value="0">Inactive doctors</option>
+          </select>
+        )}
+
+        <select value={filters.sort} onChange={(e) => update({ sort: e.target.value })} className="directory-select">
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -84,38 +108,46 @@ export default function DoctorsPage() {
         <table className="directory-table">
           <thead>
             <tr>
-              <th>Doctor</th><th>Specialization</th><th>Fee</th><th>Slot</th><th>Working days</th>
+              <th>Doctor</th>
+              <th>Specialization</th>
+              <th>Fee</th>
+              <th>Slot</th>
+              <th>Working days</th>
+              {isAdmin && <th className="actions-heading">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {items.map((d) => (
-              <tr key={d.id} className="border-t align-top">
+              <tr key={d.id}>
                 <td>
-                  <div className="doctor-name"><span className="doctor-avatar">{d.name.slice(0, 1)}</span><span><strong>{d.name}</strong><small>{d.email}</small></span></div>
+                  <div className="record-name">{d.name}</div>
+                  <div className="record-meta">{d.email}</div>
                 </td>
-                <td><span className="specialty-tag">{d.specialization}</span></td>
-                {/* consultation_fee arrives as a string like "1000.00" */}
-                <td className="fee-cell">Rs {Number(d.consultation_fee).toLocaleString()}</td>
+                <td>{d.specialization}</td>
+                <td>Rs {Number(d.consultation_fee).toLocaleString()}</td>
                 <td>{d.slot_duration} min</td>
                 <td className="schedule-cell">
                   {d.schedules.map((s) => (
                     <div key={s.day_of_week}>
-                      <span className="inline-block w-10 font-medium">{s.day_name.slice(0, 3)}</span>
+                      <span>{s.day_name.slice(0, 3)}</span>
                       {s.start_time}–{s.end_time}
                     </div>
                   ))}
                 </td>
+                {isAdmin && (
+                  <td className="patient-actions">
+                    <Link to={`/doctors/${d.id}/edit`} className="table-action edit-action">Edit</Link>
+                  </td>
+                )}
               </tr>
             ))}
 
             {!loading && !error && items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="empty-state">No doctors match these filters.</td>
-              </tr>
+              <tr><td colSpan={columns} className="empty-state">No doctors match these filters.</td></tr>
             )}
           </tbody>
         </table>
-        {loading && items.length === 0 && <p className="loading-state"><span /> Loading doctor directory...</p>}
+        {loading && items.length === 0 && <p className="loading-state"><span /> Loading doctors...</p>}
       </div>
 
       <Pagination meta={meta} loading={loading} onPage={(page) => setFilters((f) => ({ ...f, page }))} noun="doctors" />

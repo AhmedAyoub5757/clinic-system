@@ -36,3 +36,9 @@ export async function getAppointment(id) {
   const res = await api.get(`/appointments/${id}`);
   return res.data.data;
 }
+
+// PUT /appointments/{id} → updated appointment
+export async function rescheduleAppointment(id, payload) {
+  const res = await api.put(`/appointments/${id}`, payload);
+  return res.data.data;
+}

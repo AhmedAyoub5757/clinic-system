@@ -12,6 +12,10 @@ import BookAppointmentPage from "./pages/BookAppointmentPage";
 import ConsultationFormPage from "./pages/ConsultationFormPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import PatientHistoryPage from "./pages/PatientHistoryPage";
+import UsersPage from "./pages/UsersPage";
+import UserFormPage from "./pages/UserFormPage";
+import DoctorFormPage from "./pages/DoctorFormPage";
+import RescheduleAppointmentPage from "./pages/RescheduleAppointmentPage";
 
 export default function App() {
   return (
@@ -84,6 +88,54 @@ export default function App() {
               element={
                 <ProtectedRoute roles={["doctor"]}>
                   <PatientHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/new"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <UserFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/:id/edit"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <UserFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctors/new"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <DoctorFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctors/:id/edit"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <DoctorFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/appointments/:id/reschedule"
+              element={
+                <ProtectedRoute roles={["receptionist"]}>
+                  <RescheduleAppointmentPage />
                 </ProtectedRoute>
               }
             />
