@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { getDashboard } from "../api/dashboard";
+import { listAppointments } from "../api/appointments";
+import { listDoctors } from "../api/doctors";
+import { listPatients } from "../api/patients";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
+import { todayString } from "../lib/dates";
 import { friendlyMessage } from "../lib/errors";
 import { Activity, ArrowUpRight, CalendarDays, Clock3, RefreshCw, Stethoscope, UsersRound } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function StatCard({ label, value, hint, icon: Icon, tone, onClick }) {
   return (
@@ -65,16 +69,68 @@ function AdminStats() {
   );
 }
 
+function StaffDashboard({ role }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const isDoctor = role === "doctor";
+  const today = todayString();
+
+  useEffect(() => {
+    let ignore = false;
+    setData(null);
+    setError("");
+
+    Promise.all([
+      listAppointments({ date: today, sort: "appointment_date", per_page: 10 }),
+      listPatients({ per_page: 1 }),
+      listDoctors({ per_page: 1 }),
+    ])
+      .then(([appointments, patients, doctors]) => {
+        if (!ignore) setData({ appointments, patients, doctors });
+      })
+      .catch((err) => !ignore && setError(friendlyMessage(err)));
+
+    return () => {
+      ignore = true;
+    };
+  }, [today, refreshKey]);
+
+  if (error) return <div className="patients-error dashboard-alert">{error}</div>;
+  if (!data) return <div className="dashboard-loading"><span /><p>Loading today&apos;s clinic view...</p></div>;
+
+  const appointments = data.appointments.items;
+  const pending = appointments.filter((appointment) => appointment.status === "pending").length;
+  const confirmed = appointments.filter((appointment) => appointment.status === "confirmed").length;
+  const completed = appointments.filter((appointment) => appointment.status === "completed").length;
+  const title = isDoctor ? "Your clinic day" : "Front desk overview";
+  const subtitle = isDoctor ? "Your appointments and care tasks for today." : "Keep today’s arrivals, bookings, and care team moving.";
+
+  return (
+    <div className="staff-dashboard page-enter">
+      <div className="dashboard-live-line"><span><Activity size={14} /> {isDoctor ? "Doctor workspace" : "Reception workspace"}</span><small>{today} · live data</small></div>
+      <div className="staff-dashboard-heading"><div><p className="eyebrow">{isDoctor ? "Daily rounds" : "Daily operations"}</p><h2>{title}</h2><p>{subtitle}</p></div><button type="button" className="refresh-dashboard" onClick={() => setRefreshKey((key) => key + 1)} title="Refresh dashboard"><RefreshCw size={17} /></button></div>
+      <div className="staff-stat-grid">
+        <Link to="/appointments" className="staff-stat-card"><span><CalendarDays size={17} /> Today&apos;s appointments</span><strong>{data.appointments.meta?.total ?? appointments.length}</strong><small>{confirmed} confirmed · {pending} pending</small></Link>
+        <Link to="/patients" className="staff-stat-card"><span><UsersRound size={17} /> Patient directory</span><strong>{data.patients.meta?.total ?? "--"}</strong><small>Current patient records</small></Link>
+        <Link to="/doctors" className="staff-stat-card"><span><Stethoscope size={17} /> Active doctors</span><strong>{data.doctors.meta?.total ?? "--"}</strong><small>Available care team</small></Link>
+        <div className="staff-stat-card staff-stat-muted"><span><Clock3 size={17} /> Completed today</span><strong>{completed}</strong><small>{isDoctor ? "Your completed consultations" : "Completed appointments"}</small></div>
+      </div>
+      <div className="staff-content-grid">
+        <section className="staff-panel"><div className="dashboard-panel-heading"><div><p className="eyebrow">Today&apos;s schedule</p><h2>{appointments.length ? "Upcoming appointments" : "No appointments yet"}</h2></div><Link to="/appointments" className="text-button">Open schedule <ArrowUpRight size={14} /></Link></div>{appointments.length === 0 ? <p className="staff-empty">Your live appointment list is clear for today.</p> : <div className="staff-appointment-list">{appointments.slice(0, 6).map((appointment) => <div className="staff-appointment" key={appointment.id}><span className="staff-time">{appointment.start_time}</span><div><strong>{appointment.patient?.full_name ?? "Patient"}</strong><small>{appointment.doctor?.name ?? "Assigned doctor"}</small></div><StatusBadge status={appointment.status} />{isDoctor && appointment.status === "confirmed" && appointment.appointment_date <= today && <Link to={`/appointments/${appointment.id}/consultation/new`} className="staff-action">Record</Link>}</div>)}</div>}</section>
+        <section className="staff-panel staff-next-panel"><p className="eyebrow">Next best action</p><h2>{isDoctor ? "Complete today&apos;s care records" : "Prepare the next arrival"}</h2><p>{isDoctor ? "Open a confirmed appointment to record symptoms, diagnosis, and prescriptions." : "Search for a patient, book a visit, or review today&apos;s appointment queue."}</p><Link to={isDoctor ? "/appointments" : "/appointments/new"} className="primary-button">{isDoctor ? "View my appointments" : "Book appointment"} <ArrowUpRight size={16} /></Link></section>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold">Welcome, {user.name}</h1>
-      <p className="text-gray-600 mt-1 mb-6">
-        {user.role === "admin" ? "Clinic overview" : "Pick a section from the menu."}
-      </p>
-      {user.role === "admin" && <AdminStats />}
+    <div className="dashboard-page page-enter">
+      <div className="page-heading"><div><p className="eyebrow">Thursday, October 1, 2026</p><h1>Good morning, {user.name?.split(" ")[0]} <span className="heading-dot">.</span></h1><p className="page-subtitle">{user.role === "admin" ? "Here is what is happening across your clinic today." : "Your workspace, focused on what needs attention today."}</p></div></div>
+      {user.role === "admin" ? <AdminStats /> : <StaffDashboard role={user.role} />}
     </div>
   );
 }
