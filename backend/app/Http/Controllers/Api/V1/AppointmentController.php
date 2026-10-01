@@ -21,11 +21,10 @@ use Illuminate\Support\Facades\Gate;
 
 class AppointmentController extends Controller
 {
-    private const WITH = ['patient', 'doctor.user:id,name'];
+    // private const WITH = ['patient', 'doctor.user:id,name'];
+    private const WITH = ['patient', 'doctor.user:id,name', 'consultation:id,appointment_id'];
 
-    public function __construct(private AppointmentScheduler $scheduler)
-    {
-    }
+    public function __construct(private AppointmentScheduler $scheduler) {}
 
     public function index(IndexAppointmentRequest $request)
     {
@@ -36,13 +35,13 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::with(self::WITH)
             // Doctors are always scoped to their own appointments, whatever filters they send
-            ->when($user->hasRole('doctor'), fn ($q) => $q->where('doctor_id', $user->doctor?->id ?? 0))
-            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
-            ->when($request->doctor_id, fn ($q, $v) => $q->where('doctor_id', $v))
-            ->when($request->patient_id, fn ($q, $v) => $q->where('patient_id', $v))
-            ->when($request->date, fn ($q, $v) => $q->where('appointment_date', $v))
-            ->when($request->date_from, fn ($q, $v) => $q->where('appointment_date', '>=', $v))
-            ->when($request->date_to, fn ($q, $v) => $q->where('appointment_date', '<=', $v))
+            ->when($user->hasRole('doctor'), fn($q) => $q->where('doctor_id', $user->doctor?->id ?? 0))
+            ->when($request->status, fn($q, $v) => $q->where('status', $v))
+            ->when($request->doctor_id, fn($q, $v) => $q->where('doctor_id', $v))
+            ->when($request->patient_id, fn($q, $v) => $q->where('patient_id', $v))
+            ->when($request->date, fn($q, $v) => $q->where('appointment_date', $v))
+            ->when($request->date_from, fn($q, $v) => $q->where('appointment_date', '>=', $v))
+            ->when($request->date_to, fn($q, $v) => $q->where('appointment_date', '<=', $v))
             ->orderBy($column, $direction)
             ->orderBy('start_time', $direction)
             ->paginate($request->integer('per_page', 15));

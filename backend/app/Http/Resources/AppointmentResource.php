@@ -35,6 +35,7 @@ class AppointmentResource extends JsonResource
                 'specialization' => $this->doctor->specialization,
             ]),
             'created_at'          => $this->created_at?->toDateTimeString(),
+            'consultation_id' => $this->whenLoaded('consultation', fn () => $this->consultation?->id),
         ];
     }
 }

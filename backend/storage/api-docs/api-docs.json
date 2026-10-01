@@ -12,6 +12,539 @@
         }
     ],
     "paths": {
+        "/appointments": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "List appointments (filter, sort, paginate)",
+                "description": "Roles: admin, doctor, receptionist. DOCTORS only ever receive their own appointments, whatever filters they send.",
+                "operationId": "ce9b53fb50a4d710880b2fd690292545",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "confirmed",
+                                "completed",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "doctor_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "patient_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Exact day",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Must be on or after date_from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Prefix with - for descending. Ties are broken by start_time.",
+                        "schema": {
+                            "type": "string",
+                            "default": "appointment_date",
+                            "enum": [
+                                "appointment_date",
+                                "-appointment_date",
+                                "created_at",
+                                "-created_at"
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Appointment"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "$ref": "#/components/schemas/PaginationMeta"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Book an appointment",
+                "description": "Role: receptionist only. New appointments start as `pending`.\n\n**422** means the request itself breaks a rule: doctor inactive, time in the past, doctor does not work that day, outside working hours, or time not aligned to the doctor's slots. **409** means the request is valid but the calendar changed: the doctor's slot is taken, or the patient already has an appointment at that time. A 409 usually means someone else booked first, so reload availability.",
+                "operationId": "db1e63fb9c81b62a85ad9fcd4502ded8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppointmentBookInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Booked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Appointment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/appointments/{id}": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Get one appointment",
+                "description": "Roles: admin, receptionist, and the doctor it belongs to. Another doctor gets 403.",
+                "operationId": "edff94d9954b889f319e3c4429db7c78",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The appointment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Appointment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Reschedule or edit the reason",
+                "description": "Role: receptionist only. Only pending or confirmed appointments can be edited (409 otherwise). The appointment does not conflict with itself.",
+                "operationId": "ea588c4c64b7a978029ae6e72c1508cf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppointmentUpdateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Appointment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/doctors/{id}/availability": {
+            "get": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Free slots for a doctor on a date",
+                "description": "Roles: all staff. Use this to build the booking screen: the returned `start` value is what you send as `start_time` when booking. Slots already in the past (when the date is today) are not returned.",
+                "operationId": "b7001c87cd1db7d70070a38cb8b658c2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Doctor id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Y-m-d, today or later",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Free slots (the list may be empty)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Availability"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/appointments/{id}/confirm": {
+            "post": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Confirm a pending appointment",
+                "description": "Role: receptionist only. Allowed only from `pending` (409 otherwise). No request body.",
+                "operationId": "ff16737a0142148d6b64a4aec016166e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmed. Returns the updated appointment.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Appointment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/appointments/{id}/cancel": {
+            "post": {
+                "tags": [
+                    "Appointments"
+                ],
+                "summary": "Cancel an appointment",
+                "description": "Role: receptionist only. Allowed from `pending` or `confirmed`. Cancelling frees the slot.",
+                "operationId": "8852158537a4af67b6aca514af235075",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "cancellation_reason"
+                                ],
+                                "properties": {
+                                    "cancellation_reason": {
+                                        "type": "string",
+                                        "example": "Patient requested",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cancelled. Returns the updated appointment.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Appointment"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/auth/login": {
             "post": {
                 "tags": [
@@ -198,10 +731,2194 @@
                     }
                 ]
             }
+        },
+        "/appointments/{id}/consultation": {
+            "post": {
+                "tags": [
+                    "Consultations"
+                ],
+                "summary": "Record a consultation (completes the appointment)",
+                "description": "Role: doctor, own appointments only (403 otherwise). The consultation and the status change to `completed` are saved together or not at all. **409** if the appointment is not `confirmed`, was already completed, or its date is in the future. **Validation errors on prescriptions use dotted keys**, e.g. `prescriptions.0.dosage`.",
+                "operationId": "3c29ecda88e7cb6ab14c4d10cef8a14a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Appointment id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ConsultationInput"
+                                    },
+                                    {
+                                        "required": [
+                                            "diagnosis"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Recorded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Consultation"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/consultations/{id}": {
+            "get": {
+                "tags": [
+                    "Consultations"
+                ],
+                "summary": "Get one consultation",
+                "description": "Role: doctor (ANY doctor can read, for continuity of care). Admin and receptionist get 403.",
+                "operationId": "0cd8e037472196bc67e04e52f12b92d2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The consultation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Consultation"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Consultations"
+                ],
+                "summary": "Amend a consultation (partial)",
+                "description": "Role: doctor, and only the AUTHOR of the record (403 for other doctors). Send only what changed. If `prescriptions` is sent it replaces the whole list.",
+                "operationId": "b5fda4ecb3f971b3b402070a26708f1b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConsultationInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Consultation"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/patients/{id}/history": {
+            "get": {
+                "tags": [
+                    "Consultations"
+                ],
+                "summary": "A patient's consultation history (all doctors)",
+                "description": "Role: doctor only. Newest first. An empty history is a normal 200 with `data: []`. Items do not include the `patient` block.",
+                "operationId": "0568b1e4822a1073dcb57772afc65c60",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Patient id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated history",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Consultation"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "$ref": "#/components/schemas/PaginationMeta"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Clinic statistics",
+                "description": "Role: admin only. Cached in Redis for 5 minutes, so numbers can be up to 5 minutes old. Show `generated_at` to the user. `X-Cache` is HIT or MISS.",
+                "operationId": "7d529c1b9cc0d87d211105ca7f24637f",
+                "responses": {
+                    "200": {
+                        "description": "Statistics",
+                        "headers": {
+                            "X-Cache": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "HIT",
+                                        "MISS"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "properties": {
+                                                        "patients": {
+                                                            "properties": {
+                                                                "total": {
+                                                                    "type": "integer",
+                                                                    "example": 50
+                                                                },
+                                                                "new_this_month": {
+                                                                    "type": "integer",
+                                                                    "example": 4
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "doctors": {
+                                                            "properties": {
+                                                                "active": {
+                                                                    "type": "integer",
+                                                                    "example": 5
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "appointments": {
+                                                            "properties": {
+                                                                "today": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "upcoming_7_days": {
+                                                                    "description": "Pending and confirmed only",
+                                                                    "type": "integer"
+                                                                },
+                                                                "by_status": {
+                                                                    "properties": {
+                                                                        "pending": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "confirmed": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "completed": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "cancelled": {
+                                                                            "type": "integer"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "consultations": {
+                                                            "properties": {
+                                                                "this_month": {
+                                                                    "type": "integer"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "generated_at": {
+                                                            "type": "string",
+                                                            "example": "2026-10-01 14:05:00"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/doctors": {
+            "get": {
+                "tags": [
+                    "Doctors"
+                ],
+                "summary": "List doctors (filter, sort, paginate)",
+                "description": "Roles: all staff. Only ACTIVE doctors are returned unless `is_active=0`. Cached in Redis for 10 minutes and cleared on any doctor or user change. The `X-Cache` header shows HIT or MISS.",
+                "operationId": "aaf428c4625e6e1b95bf091333fe016b",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Partial match on doctor name or specialization",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "specialization",
+                        "in": "query",
+                        "description": "Exact match",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "available_on",
+                        "in": "query",
+                        "description": "Doctors who work on this weekday. 0 = Sunday ... 6 = Saturday",
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 6,
+                            "minimum": 0
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "description": "Send 1 or 0. The words true/false are rejected.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Prefix with - for descending",
+                        "schema": {
+                            "type": "string",
+                            "default": "-created_at",
+                            "enum": [
+                                "specialization",
+                                "-specialization",
+                                "consultation_fee",
+                                "-consultation_fee",
+                                "created_at",
+                                "-created_at"
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list",
+                        "headers": {
+                            "X-Cache": {
+                                "description": "HIT or MISS",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "HIT",
+                                        "MISS"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Doctor"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "$ref": "#/components/schemas/PaginationMeta"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Doctors"
+                ],
+                "summary": "Create a doctor profile",
+                "description": "Role: admin only. Create the user (role `doctor`) first, then attach the profile. Profile and schedules are saved together or not at all. There is no DELETE: deactivate with `is_active: false`.",
+                "operationId": "8e3fc92d7e1ba6beaec68fbfd1cec96d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/DoctorInput"
+                                    },
+                                    {
+                                        "required": [
+                                            "user_id",
+                                            "specialization",
+                                            "license_number",
+                                            "consultation_fee",
+                                            "slot_duration",
+                                            "schedules"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Profile created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Doctor"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/doctors/{id}": {
+            "get": {
+                "tags": [
+                    "Doctors"
+                ],
+                "summary": "Get one doctor with schedules",
+                "description": "Roles: all staff. Returns inactive doctors too.",
+                "operationId": "ac81b367c6ee074a9064a4dfaa34f17f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The doctor",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Doctor"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Doctors"
+                ],
+                "summary": "Update a doctor profile (partial)",
+                "description": "Role: admin only. `user_id` cannot be changed and is ignored. If `schedules` is sent it replaces the whole old set.",
+                "operationId": "fcc44b17478248811c325c5ec4e30bad",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DoctorInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Doctor"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/patients": {
+            "get": {
+                "tags": [
+                    "Patients"
+                ],
+                "summary": "List patients (search, filter, sort, paginate)",
+                "description": "Roles: admin, doctor, receptionist. Soft-deleted patients are never returned. The search parameter matches one word at a time against name, patient number, phone and email.",
+                "operationId": "12941b80684e4bb13fca81fed7041a12",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "gender",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "male",
+                                "female",
+                                "other"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "blood_group",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "A+",
+                                "A-",
+                                "B+",
+                                "B-",
+                                "AB+",
+                                "AB-",
+                                "O+",
+                                "O-"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Prefix with - for descending",
+                        "schema": {
+                            "type": "string",
+                            "default": "-created_at",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "last_name",
+                                "-last_name",
+                                "date_of_birth",
+                                "-date_of_birth"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (1 to 100)",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Patient"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "$ref": "#/components/schemas/PaginationMeta"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Patients"
+                ],
+                "summary": "Register a patient",
+                "description": "Role: receptionist only. The patient_number is generated by the server and cannot be sent.",
+                "operationId": "f4bdddd227d04fc44396e016000cd950",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/PatientInput"
+                                    },
+                                    {
+                                        "required": [
+                                            "first_name",
+                                            "last_name",
+                                            "gender",
+                                            "date_of_birth",
+                                            "phone"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Patient registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Patient"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/patients/{id}": {
+            "get": {
+                "tags": [
+                    "Patients"
+                ],
+                "summary": "Get one patient",
+                "description": "Roles: admin, doctor, receptionist.",
+                "operationId": "3575a5d387d099d110bd38ec3bd3a4f7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The patient",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Patient"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Patients"
+                ],
+                "summary": "Update a patient (partial)",
+                "description": "Role: receptionist only. Send only the fields that changed.",
+                "operationId": "850aacd4287cfb1c0aceacccd03e7b69",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatientInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Patient updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/Patient"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Patients"
+                ],
+                "summary": "Delete a patient (soft delete)",
+                "description": "Role: receptionist only. The record is hidden, not erased. Existing appointments keep showing the patient.",
+                "operationId": "b0ce2677888812f6d560d51717e159a8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Patient deleted"
+                                        },
+                                        "data": {
+                                            "type": "null",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List staff accounts",
+                "description": "Role: admin only. Newest first, 15 per page.",
+                "operationId": "9cbdee7f56831f47afe59aefaebc1703",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Partial match on name or email",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "admin",
+                                "doctor",
+                                "receptionist"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "without_doctor_profile",
+                        "in": "query",
+                        "description": "Send 1 to list only users that have no doctor profile yet. Use with role=doctor when creating a profile.",
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/Page"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPage"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/User"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "$ref": "#/components/schemas/PaginationMeta"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create a staff account",
+                "description": "Role: admin only. To make a doctor, create the user with role doctor, then create the doctor profile (Doctors section).",
+                "operationId": "7ccba178f9ac51b524c38a40d312d9bc",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/UserInput"
+                                    },
+                                    {
+                                        "required": [
+                                            "name",
+                                            "email",
+                                            "password",
+                                            "role"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/User"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get one staff account",
+                "description": "Role: admin only.",
+                "operationId": "3c4deae0e7ff84ee85aba41b512234be",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/User"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update a staff account (partial)",
+                "description": "Role: admin only. Send only the fields that changed. Sending role replaces the current role.",
+                "operationId": "606b9a287945819012fa3ad99bd032b7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SuccessEnvelope"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "$ref": "#/components/schemas/User"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a staff account",
+                "description": "Role: admin only. Revokes all tokens of the user. An admin cannot delete their own account (403). A user with related records cannot be deleted (409).",
+                "operationId": "39ff573812d88c228d3f7957a0a0c4b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User deleted"
+                                        },
+                                        "data": {
+                                            "type": "null",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
         "schemas": {
+            "Appointment": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "confirmed",
+                            "completed",
+                            "cancelled"
+                        ]
+                    },
+                    "allowed_transitions": {
+                        "description": "Statuses this appointment may move to, based on its CURRENT STATE only. It does not consider the caller's role.",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "confirmed",
+                                "completed",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    "appointment_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-10-05"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "09:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "09:30"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cancellation_reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "patient": {
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "patient_number": {
+                                "type": "string",
+                                "example": "PT-000003"
+                            },
+                            "full_name": {
+                                "type": "string"
+                            },
+                            "phone": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "doctor": {
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "specialization": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2026-10-01 11:00:00"
+                    },
+                    "consultation_id": {
+                        "description": "Set once a consultation has been recorded for this appointment",
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentBookInput": {
+                "required": [
+                    "patient_id",
+                    "doctor_id",
+                    "appointment_date",
+                    "start_time"
+                ],
+                "properties": {
+                    "patient_id": {
+                        "description": "Must exist and not be deleted",
+                        "type": "integer",
+                        "example": 4
+                    },
+                    "doctor_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "appointment_date": {
+                        "description": "Y-m-d, today or later",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-10-05"
+                    },
+                    "start_time": {
+                        "description": "H:i. Must be one of the doctor's slot starts (see availability).",
+                        "type": "string",
+                        "example": "10:00"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500
+                    }
+                },
+                "type": "object"
+            },
+            "AppointmentUpdateInput": {
+                "description": "Patient and doctor cannot be changed. Cancel and rebook instead.",
+                "properties": {
+                    "appointment_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "11:00"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500
+                    }
+                },
+                "type": "object"
+            },
+            "Availability": {
+                "properties": {
+                    "doctor_id": {
+                        "type": "integer"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "day": {
+                        "type": "string",
+                        "example": "Monday"
+                    },
+                    "slot_duration": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "slots": {
+                        "description": "Free slots only. Empty if the doctor does not work that day, is inactive, or is fully booked.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "start": {
+                                    "type": "string",
+                                    "example": "09:30"
+                                },
+                                "end": {
+                                    "type": "string",
+                                    "example": "10:00"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "PrescriptionItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "medicine_name": {
+                        "type": "string",
+                        "example": "Paracetamol"
+                    },
+                    "dosage": {
+                        "type": "string",
+                        "example": "500mg"
+                    },
+                    "frequency": {
+                        "type": "string",
+                        "example": "3 times a day"
+                    },
+                    "duration_days": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "instructions": {
+                        "type": "string",
+                        "example": "After meals",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PrescriptionInput": {
+                "required": [
+                    "medicine_name",
+                    "dosage",
+                    "frequency",
+                    "duration_days"
+                ],
+                "properties": {
+                    "medicine_name": {
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "dosage": {
+                        "type": "string",
+                        "example": "500mg",
+                        "maxLength": 50
+                    },
+                    "frequency": {
+                        "type": "string",
+                        "example": "3 times a day",
+                        "maxLength": 100
+                    },
+                    "duration_days": {
+                        "type": "integer",
+                        "maximum": 365,
+                        "minimum": 1
+                    },
+                    "instructions": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    }
+                },
+                "type": "object"
+            },
+            "Consultation": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "appointment_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "symptoms": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "diagnosis": {
+                        "type": "string",
+                        "example": "Viral fever"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "follow_up_date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "prescriptions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PrescriptionItem"
+                        }
+                    },
+                    "appointment": {
+                        "properties": {
+                            "date": {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            "start_time": {
+                                "type": "string",
+                                "example": "10:00"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "patient": {
+                        "description": "ABSENT in the patient history list (the patient is already known there)",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "patient_number": {
+                                "type": "string"
+                            },
+                            "full_name": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "doctor": {
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "specialization": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "ConsultationInput": {
+                "properties": {
+                    "symptoms": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    },
+                    "diagnosis": {
+                        "description": "Required on create. On update it can be changed but never blanked.",
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "notes": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 5000
+                    },
+                    "follow_up_date": {
+                        "description": "Y-m-d, strictly AFTER today",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "prescriptions": {
+                        "description": "On update, a sent list REPLACES the old one. An empty array clears it.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PrescriptionInput"
+                        },
+                        "maxItems": 20
+                    }
+                },
+                "type": "object"
+            },
+            "Schedule": {
+                "properties": {
+                    "day_of_week": {
+                        "description": "0 = Sunday ... 6 = Saturday",
+                        "type": "integer",
+                        "example": 1,
+                        "maximum": 6,
+                        "minimum": 0
+                    },
+                    "day_name": {
+                        "type": "string",
+                        "example": "Monday"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "09:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "17:00"
+                    }
+                },
+                "type": "object"
+            },
+            "ScheduleInput": {
+                "required": [
+                    "day_of_week",
+                    "start_time",
+                    "end_time"
+                ],
+                "properties": {
+                    "day_of_week": {
+                        "type": "integer",
+                        "example": 1,
+                        "maximum": 6,
+                        "minimum": 0
+                    },
+                    "start_time": {
+                        "description": "H:i format",
+                        "type": "string",
+                        "example": "09:00"
+                    },
+                    "end_time": {
+                        "description": "H:i format, must be after start_time",
+                        "type": "string",
+                        "example": "17:00"
+                    }
+                },
+                "type": "object"
+            },
+            "Doctor": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Dr. Sara Khan"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "doctor@clinic.test"
+                    },
+                    "specialization": {
+                        "type": "string",
+                        "example": "General Medicine"
+                    },
+                    "license_number": {
+                        "type": "string",
+                        "example": "PMC-00001"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "consultation_fee": {
+                        "description": "Decimal returned as a STRING",
+                        "type": "string",
+                        "example": "1000.00"
+                    },
+                    "slot_duration": {
+                        "description": "Minutes per appointment",
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "bio": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Schedule"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "DoctorInput": {
+                "properties": {
+                    "user_id": {
+                        "description": "Create only. The user must have the doctor role and no profile yet.",
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "specialization": {
+                        "type": "string",
+                        "example": "Neurology",
+                        "maxLength": 100
+                    },
+                    "license_number": {
+                        "description": "Unique",
+                        "type": "string",
+                        "example": "PMC-90001",
+                        "maxLength": 50
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 20
+                    },
+                    "consultation_fee": {
+                        "type": "number",
+                        "example": 2500,
+                        "maximum": 1000000,
+                        "minimum": 0
+                    },
+                    "slot_duration": {
+                        "type": "integer",
+                        "example": 30,
+                        "maximum": 120,
+                        "minimum": 10
+                    },
+                    "bio": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 1000
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "schedules": {
+                        "description": "One entry per working day, no repeated days. On update, a sent list REPLACES the old one.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ScheduleInput"
+                        },
+                        "maxItems": 7,
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
+            "Patient": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "patient_number": {
+                        "type": "string",
+                        "example": "PT-000001"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "example": "Ahmed"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "example": "Raza"
+                    },
+                    "full_name": {
+                        "type": "string",
+                        "example": "Ahmed Raza"
+                    },
+                    "gender": {
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female",
+                            "other"
+                        ]
+                    },
+                    "date_of_birth": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "1990-05-14"
+                    },
+                    "age": {
+                        "type": "integer",
+                        "example": 36
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "03001234567"
+                    },
+                    "email": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "national_id": {
+                        "type": "string",
+                        "example": "3520212345671",
+                        "nullable": true
+                    },
+                    "blood_group": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "A+",
+                            "A-",
+                            "B+",
+                            "B-",
+                            "AB+",
+                            "AB-",
+                            "O+",
+                            "O-"
+                        ]
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "emergency_contact": {
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "phone": {
+                                "type": "string",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2026-10-01 09:30:00"
+                    }
+                },
+                "type": "object"
+            },
+            "PatientInput": {
+                "properties": {
+                    "first_name": {
+                        "type": "string",
+                        "example": "Ahmed",
+                        "maxLength": 100
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "example": "Raza",
+                        "maxLength": 100
+                    },
+                    "gender": {
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female",
+                            "other"
+                        ]
+                    },
+                    "date_of_birth": {
+                        "description": "Must be before today",
+                        "type": "string",
+                        "format": "date",
+                        "example": "1990-05-14"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "03001234567",
+                        "maxLength": 20
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true
+                    },
+                    "national_id": {
+                        "description": "Unique across patients",
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 20
+                    },
+                    "blood_group": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "A+",
+                            "A-",
+                            "B+",
+                            "B-",
+                            "AB+",
+                            "AB-",
+                            "O+",
+                            "O-"
+                        ]
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500
+                    },
+                    "emergency_contact_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "emergency_contact_phone": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 20
+                    }
+                },
+                "type": "object"
+            },
+            "UserInput": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Dr. Hina Malik",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "hina@clinic.test"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "password123",
+                        "minLength": 8
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "admin",
+                            "doctor",
+                            "receptionist"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "properties": {
                     "id": {
@@ -398,6 +3115,31 @@
                 }
             }
         },
+        "parameters": {
+            "Page": {
+                "name": "page",
+                "in": "query",
+                "description": "Page number",
+                "required": false,
+                "schema": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1
+                }
+            },
+            "PerPage": {
+                "name": "per_page",
+                "in": "query",
+                "description": "Items per page (1 to 100)",
+                "required": false,
+                "schema": {
+                    "type": "integer",
+                    "default": 15,
+                    "maximum": 100,
+                    "minimum": 1
+                }
+            }
+        },
         "securitySchemes": {
             "sanctum": {
                 "type": "http",
@@ -410,6 +3152,30 @@
         {
             "name": "Auth",
             "description": "Login, logout and current user"
+        },
+        {
+            "name": "Users",
+            "description": "Staff accounts (admin only)"
+        },
+        {
+            "name": "Patients",
+            "description": "Patient records (receptionist writes; all staff read)"
+        },
+        {
+            "name": "Doctors",
+            "description": "Doctor profiles and schedules (admin writes; all staff read)"
+        },
+        {
+            "name": "Appointments",
+            "description": "Booking and status flow"
+        },
+        {
+            "name": "Consultations",
+            "description": "Clinical records (doctors only)"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Admin statistics"
         }
     ]
 }

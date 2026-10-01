@@ -16,6 +16,7 @@ import UsersPage from "./pages/UsersPage";
 import UserFormPage from "./pages/UserFormPage";
 import DoctorFormPage from "./pages/DoctorFormPage";
 import RescheduleAppointmentPage from "./pages/RescheduleAppointmentPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
   return (
@@ -140,6 +141,7 @@ export default function App() {
               }
             />
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
