@@ -9,6 +9,9 @@ import PatientFormPage from "./pages/PatientFormPage";
 import DoctorsPage from "./pages/DoctorsPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import BookAppointmentPage from "./pages/BookAppointmentPage";
+import ConsultationFormPage from "./pages/ConsultationFormPage";
+import ConsultationPage from "./pages/ConsultationPage";
+import PatientHistoryPage from "./pages/PatientHistoryPage";
 
 export default function App() {
   return (
@@ -49,6 +52,38 @@ export default function App() {
               element={
                 <ProtectedRoute roles={["receptionist"]}>
                   <BookAppointmentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/appointments/:appointmentId/consultation/new"
+              element={
+                <ProtectedRoute roles={["doctor"]}>
+                  <ConsultationFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/consultations/:id"
+              element={
+                <ProtectedRoute roles={["doctor"]}>
+                  <ConsultationPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/consultations/:id/edit"
+              element={
+                <ProtectedRoute roles={["doctor"]}>
+                  <ConsultationFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:id/history"
+              element={
+                <ProtectedRoute roles={["doctor"]}>
+                  <PatientHistoryPage />
                 </ProtectedRoute>
               }
             />

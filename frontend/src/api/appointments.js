@@ -30,3 +30,9 @@ export async function cancelAppointment(id, cancellationReason) {
   const res = await api.post(`/appointments/${id}/cancel`, { cancellation_reason: cancellationReason });
   return res.data.data;
 }
+
+// GET /appointments/{id} → appointment
+export async function getAppointment(id) {
+  const res = await api.get(`/appointments/${id}`);
+  return res.data.data;
+}

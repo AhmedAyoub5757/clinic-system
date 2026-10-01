@@ -19,6 +19,7 @@ const SORT_OPTIONS = [
 export default function PatientsPage() {
   const { user } = useAuth();
   const canWrite = user.role === "receptionist"; // Swagger: writes are receptionist-only
+  const isDoctor = user.role === "doctor";
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -177,7 +178,7 @@ export default function PatientsPage() {
           <tbody>
             {items.map((p) => (
               <tr key={p.id} className="border-t">
-                <td className="patient-number">{p.patient_number}</td><td className="patient-name">{p.full_name}</td><td className="capitalize">{p.gender}</td><td>{p.age}</td><td>{p.phone}</td><td><span className="blood-tag">{p.blood_group ?? "—"}</span></td>
+                <td className="patient-number">{p.patient_number}</td><td className="patient-name">{isDoctor ? (<Link to={`/patients/${p.id}/history`} className="text-blue-600">{p.full_name}</Link>) : (p.full_name)}</td><td className="capitalize">{p.gender}</td><td>{p.age}</td><td>{p.phone}</td><td><span className="blood-tag">{p.blood_group ?? "—"}</span></td>
                 {canWrite && (
                   <td className="patient-actions">
                     <Link to={`/patients/${p.id}/edit`} className="table-action edit-action"><Edit3 size={14} /> Edit</Link>
