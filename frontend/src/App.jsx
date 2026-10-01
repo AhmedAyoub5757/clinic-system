@@ -6,6 +6,9 @@ import DashboardPage from "./pages/DashboardPage";
 import AppLayout from "./components/AppLayout";
 import PatientsPage from "./pages/PatientsPage";
 import PatientFormPage from "./pages/PatientFormPage";
+import DoctorsPage from "./pages/DoctorsPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import BookAppointmentPage from "./pages/BookAppointmentPage";
 
 export default function App() {
   return (
@@ -36,6 +39,16 @@ export default function App() {
               element={
                 <ProtectedRoute roles={["receptionist"]}>
                   <PatientFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/doctors" element={<DoctorsPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route
+              path="/appointments/new"
+              element={
+                <ProtectedRoute roles={["receptionist"]}>
+                  <BookAppointmentPage />
                 </ProtectedRoute>
               }
             />
