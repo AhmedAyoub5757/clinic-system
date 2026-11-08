@@ -1,50 +1,28 @@
-FROM composer:2 AS vendor
+FROM php:8.2-apache
 
-WORKDIR /app
-
-COPY composer.json composer.lock ./
-
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress \
-    --no-scripts \
-    --optimize-autoloader
-
-FROM php:8.3-apache
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        libonig-dev \
-        libpq-dev \
-        libzip-dev \
-    && docker-php-ext-install \
-        bcmath \
-        mbstring \
-        pdo_pgsql \
-        zip \
-    && a2enmod rewrite \
+RUN apt-get update && apt-get install -y git unzip libzip-dev \
+    && docker-php-ext-install pdo_mysql zip bcmath \
+    && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 WORKDIR /var/www/html
 
-COPY --from=vendor /app/vendor ./vendor
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+
 COPY . .
+RUN composer dump-autoload --optimize --no-dev \
+    && chown -R www-data:www-data storage bootstrap/cache
 
-RUN composer dump-autoload --no-dev --optimize \
-    && printf '%s\n' \
-        '<VirtualHost *:80>' \
-        '    DocumentRoot /var/www/html/public' \
-        '    <Directory /var/www/html/public>' \
-        '        AllowOverride All' \
-        '        Require all granted' \
-        '    </Directory>' \
-        '</VirtualHost>' \
-        > /etc/apache2/sites-available/000-default.conf \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+COPY docker/start.sh /start.sh
+# Windows saves files with CRLF line endings, which breaks shell scripts. Strip them.
+RUN sed -i 's/\r$//' /start.sh && chmod +x /start.sh
 
-EXPOSE 80
-
-CMD ["apache2-foreground"]
+CMD ["/start.sh"]
